@@ -13,12 +13,17 @@ Dash (by Plotly) est un framework open-source pour créer des applications web i
 Ce framework utilise la puissance de Python pour effectuer des calculs analytiques tout en offrant une interface utilisateur intuitive.
 
 ## Contexte du projet
-Le Data Storytelling représente l'art de narrer une histoire à travers la représentation graphique des données. </br> 
-Pour rendre l'exploration des données plus accessible au plus grand public, de nombreux outils de business intelligence se sont démocratisés. </br> 
-La surabondance d’informations, même appuyée sur des visuels clairs, ne suffit pas toujours à transmettre une idée importante à l’audience.  </br> 
-Il devient crucial de donner une voix aux données, de captiver l'audience, et de faciliter la compréhension des conclusions découlant des graphiques présentés. </br> </br> 
-Ce projet a pour but de comprendre l'importance de bien utiliser et visualiser des données afin de toucher le plus et au mieux une audience visée. Le but étant également de s'inviter à le réaliser littéralement et à s'approprier le framework Dash. </br> 
-En passant donc par la récupération, le nettoyage, le traitement et la visualisation des données complexes de plusieurs contextes.
+Dans un monde où les données sont omniprésentes, savoir les analyser et les raconter est devenu essentiel.</br>
+Le Data Storytelling vise à transformer des chiffres en histoires compréhensibles et percutantes, pour aider à la prise de décision et toucher en précision l'audience voulue.</br>
+</br>
+Dans ce projet, vous incarnez un analyste data chargé de créer un outil de visualisation automatisé pour le directeur marketing de votre entreprise.</br>
+Celui-ci souhaite obtenir une vue claire et rapide des informations clés issues des données internes.</br>
+</br>
+Face aux contraintes d’accès aux données sensibles, vous utilisez des sources publiques pour développer une preuve de concept.</br>
+L’objectif : démontrer qu’une analyse claire et interactive peut rendre la donnée accessible à tous.</br>
+</br>
+Grâce au framework Dash (by Plotly), vous créez une application multi-pages intuitive et esthétique, alliant analyse, visualisation et narration.</br>
+Ce projet illustre l’importance de relier mathématiques, statistiques et communication visuelle pour donner du sens aux données.
 
 ## Nos données utilisées
 /
