@@ -29,19 +29,19 @@ Ce projet illustre l’importance de relier mathématiques, statistiques et comm
 - Life Expectancy Data (WHO) :
 
 </br>
-- Food We Eat : Fichier CSV regroupant l'historique des vols par année, par destination et par produit transporté
-Area Abbreviation = Acronyme de la zone
-Area Code = Code de la zone
-Area = Nom de la Zone
-Item Code = Code du produit transporté
-Item = Libellé du produit transporté
-Element Code = Code du type de produit
-Element = Libellé du type de produit
-Unit = Poids de la cargaison
-Latitude = Coordonnée Latitude
-Longitude =  Coordonnée Longitude
-Yxxx = Nombre de vol par année
-
+- Food We Eat : Fichier CSV regroupant l'historique des vols par année, par destination et par produit transporté </br>
+Area Abbreviation = Acronyme de la zone (var) </br>
+Area Code = Code de la zone (num) </br>
+Area = Libellé de la Zone (var) </br>
+Item Code = Code du produit transporté (num) </br>
+Item = Libellé du produit transporté (var) </br>
+Element Code = Code du type de produit (num) </br>
+Element = Libellé du type de produit (var) </br>
+Unit = Poids de la cargaison (var) </br>
+Latitude = Coordonnée Latitude (num) </br>
+Longitude =  Coordonnée Longitude (num) </br>
+Yxxx = Nombre de vol par année (var)
+ </br>
 </br>
 - 2015 Flight Delays and Cancellations : 
 
