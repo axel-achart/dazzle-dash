@@ -26,7 +26,25 @@ Grâce au framework Dash (by Plotly), vous créez une application multi-pages in
 Ce projet illustre l’importance de relier mathématiques, statistiques et communication visuelle pour donner du sens aux données.
 
 ## Nos données utilisées
-/
+- Life Expectancy Data (WHO) :
+
+</br>
+- Food We Eat : Fichier CSV regroupant l'historique des vols par année, par destination et par produit transporté
+Area Abbreviation = Acronyme de la zone
+Area Code = Code de la zone
+Area = Nom de la Zone
+Item Code = Code du produit transporté
+Item = Libellé du produit transporté
+Element Code = Code du type de produit
+Element = Libellé du type de produit
+Unit = Poids de la cargaison
+Latitude = Coordonnée Latitude
+Longitude =  Coordonnée Longitude
+Yxxx = Nombre de vol par année
+
+</br>
+- 2015 Flight Delays and Cancellations : 
+
 
 ## Les résultats d'analyse
 /
