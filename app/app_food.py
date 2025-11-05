@@ -113,7 +113,6 @@ def build_layout(df, df_long):
 
         html.Div([
             html.Div(dcc.Graph(id='pie-area'), style={'width': '48%', 'display': 'inline-block'}),
-            html.Div(dcc.Graph(id='missingness-year'), style={'width': '48%', 'display': 'inline-block'}),
         ], style={'padding': '10px'}),
 
         # hidden store with the long dataframe (as JSON) to avoid recomputing on every callback
