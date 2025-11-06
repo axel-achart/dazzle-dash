@@ -3,9 +3,11 @@ from pathlib import Path
 from typing import Tuple, List
 
 import pandas as pd
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, dash_table
+import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
+from functools import lru_cache
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR.parent / "data"
@@ -16,12 +18,8 @@ PARQUET_PATH = CLEAN_DIR / "fao_clean.parquet"
 CSV_PATH = DATA_DIR / "FAO.csv"  # adjust if your CSV is elsewhere
 
 
+@lru_cache(maxsize=1)
 def load_prepare_data(parquet_path: Path = PARQUET_PATH, csv_path: Path = CSV_PATH) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Load data (prefer parquet). Return (wide_df, long_df).
-    long_df columns: includes 'Year' as datetime and 'Value' numeric.
-    This function tries to be robust to encoding and small issues.
-    """
     # 1) Try parquet for fast load
     if parquet_path.exists():
         df = pd.read_parquet(parquet_path)
@@ -71,12 +69,6 @@ def load_prepare_data(parquet_path: Path = PARQUET_PATH, csv_path: Path = CSV_PA
 
 
 def light_clean(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Minimal, safe cleaning:
-    - Normalize 'Unit' column by removing 'tonnes' text if present.
-    - Strip whitespace on string columns.
-    - Return cleaned df.
-    """
     df = df.copy()
     # Trim whitespace for object columns
     obj_cols = df.select_dtypes(include="object").columns
@@ -97,12 +89,48 @@ except Exception as e:
     WIDE_DF, LONG_DF = pd.DataFrame(), pd.DataFrame()
 
 
+# Precompute small summaries to avoid recomputing heavy aggregations in callbacks
+PRECOMP: dict = {}
+if not LONG_DF.empty:
+    try:
+        PRECOMP['value_stats'] = LONG_DF['Value'].describe().round(2).to_dict()
+    except Exception:
+        PRECOMP['value_stats'] = {}
+else:
+    PRECOMP['value_stats'] = {}
+
+# correlation between years (if wide df has year columns)
+if not WIDE_DF.empty:
+    year_cols = [c for c in WIDE_DF.columns if isinstance(c, str) and c.isdigit()]
+    if year_cols:
+        try:
+            year_df = WIDE_DF[year_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
+            corr = year_df.corr()
+            PRECOMP['corr'] = corr.to_json(orient='split')
+        except Exception:
+            PRECOMP['corr'] = None
+    else:
+        PRECOMP['corr'] = None
+else:
+    PRECOMP['corr'] = None
+
+
 # Initialize Dash app
-app = Dash(__name__, suppress_callback_exceptions=True)
+# We'll load the chosen Bootswatch theme via a <link> element in the layout so we
+# can swap the theme dynamically at runtime. Keep font-awesome icons loaded
+# from the external_stylesheets param.
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.icons.FONT_AWESOME])
 server = app.server  # if you want to deploy
 
+color_mode_switch =  html.Span(
+    [
+        dbc.Label(className="fa fa-sun", html_for="switch"),
+        dbc.Switch( id="switch", value=True, className="d-inline-block ms-1", persistence=True),
+        dbc.Label(className="fa fa-moon", html_for="switch"),
+    ]
+)
+
 def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
-    """Build the app layout using the precomputed long_df for options and defaults"""
     # safe lists
     areas = sorted(long_df["Area"].dropna().unique()) if not long_df.empty else []
     items = sorted(long_df["Item"].dropna().unique()) if not long_df.empty else []
@@ -121,22 +149,26 @@ def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
         default_areas = []
 
     layout = html.Div([
-        # Header
+        # Theme link inserted here so it can be swapped at runtime by the switch
+        html.Link(id='theme-link', rel='stylesheet', href=dbc.themes.FLATLY),
+
+        # Header (includes theme switch)
         html.Div([
-            html.H2("FAO — Interactive Dashboard", style={"margin": "0", "color": "#2c3e50"})
-        ], style={"padding": "20px", "background-color": "#f8f9fa", "border-bottom": "1px solid #dee2e6"}),
+            html.Div(html.H2("FAO — Dashboard", style={"margin": "0"}), style={"display": "inline-block"}),
+            html.Div(color_mode_switch, style={"float": "right", "display": "flex", "alignItems": "center"})
+        ], style={"padding": "20px", "border-bottom": "1px solid #dee2e6"}),
         
         # Main content container
         html.Div([
             # Left sidebar with controls
             html.Div([
                 html.Div([
-                    html.Label("Areas (countries) — select up to 6", style={"font-weight": "bold", "margin-bottom": "8px"}),
+                    html.Label("Areas (countries)", style={"font-weight": "bold", "margin-bottom": "8px"}),
                     dcc.Dropdown(id="area-dropdown", options=[{"label": a, "value": a} for a in areas],
                                value=default_areas, multi=True, placeholder="Select areas",
                                style={"margin-bottom": "16px"}),
                                
-                    html.Label("Items (food products)", style={"font-weight": "bold", "margin-bottom": "8px"}),
+                    html.Label("Items", style={"font-weight": "bold", "margin-bottom": "8px"}),
                     dcc.Dropdown(id="item-dropdown", options=[{"label": i, "value": i} for i in items],
                                value=[], multi=True, placeholder="Select items (optional)",
                                style={"margin-bottom": "16px"}),
@@ -168,12 +200,27 @@ def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
                 # Pie chart
                 html.Div([
                     dcc.Graph(id="pie-area", config={"displayModeBar": False})
-                ], style={"padding": "10px"})
+                ], style={"padding": "10px"}),
+
+                html.Div([
+                    dcc.Graph(id='corr-heatmap', config={"displayModeBar": False})
+                ], style={"display": "flex","margin-bottom": "20px"})
+
             ], style={"width": "73%", "background-color": "white", "border-radius": "8px", "box-shadow": "0 2px 4px rgba(0,0,0,0.1)", "padding": "20px"})
-        ], style={"display": "flex", "padding": "20px", "background-color": "#f8f9fa"}),
+        ], style={"display": "flex", "padding": "20px"}),
+
+
+        html.Div([
+            dash_table.DataTable(id='stats-table',
+                                 columns=[{"name": k, "id": k} for k in ['stat', 'value']],
+                                 data=[],
+                                 style_table={"overflowX": "auto"},
+                                 style_cell={"textAlign": "left"})
+        ], style={"padding": "12px", "width": "100%"}),
 
         # store the long dataframe in JSON once to avoid re-parsing CSV per callback
-        dcc.Store(id="df-long-store", data=long_df.to_json(date_format="iso", orient="split"))
+        dcc.Store(id="df-long-store", data=long_df.to_json(date_format="iso", orient="split")),
+        dcc.Store(id='precomp-store', data=PRECOMP)
     ])
     return layout
 
@@ -181,10 +228,26 @@ def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
 app.layout = build_layout(WIDE_DF, LONG_DF)
 
 
+# Clientside callback: toggle the Bootswatch theme CSS href when the switch is toggled.
+# Using a clientside callback makes the swap instantaneous in the browser.
+app.clientside_callback(
+    f"""
+    function(is_dark) {{
+        if (is_dark) {{
+            return '{dbc.themes.DARKLY}';
+        }} else {{
+            return '{dbc.themes.FLATLY}';
+        }}
+    }}
+    """,
+    Output('theme-link', 'href'),
+    Input('switch', 'value')
+)
+
+
 # --- helpers used inside callbacks ---
 
 def df_from_store(df_json) -> pd.DataFrame:
-    """Read the JSON stored in dcc.Store safely and coerce Year -> datetime."""
     try:
         dfl = pd.read_json(df_json, orient="split")
     except Exception:
@@ -356,6 +419,86 @@ def update_pie(selected_areas, year_range, df_json):
 
     fig = px.pie(values=values, names=labels, title=f"Production distribution by Item — {area}")
     return fig
+
+
+
+@app.callback(
+    Output('corr-heatmap', 'figure'),
+    Input('precomp-store', 'data')
+)
+def update_corr(precomp):
+    if not precomp or not precomp.get('corr'):
+        fig = go.Figure()
+        fig.update_layout(title='No correlation matrix available')
+        return fig
+    try:
+        corr_df = pd.read_json(precomp.get('corr'), orient='split')
+        fig = px.imshow(corr_df.values, x=corr_df.columns, y=corr_df.index,
+                        color_continuous_scale='RdBu', zmin=-1, zmax=1,
+                        title='Correlation between years')
+        fig.update_layout(margin=dict(l=40, r=20, t=40, b=40))
+        return fig
+    except Exception:
+        fig = go.Figure()
+        fig.update_layout(title='Error building correlation heatmap')
+        return fig
+
+
+@app.callback(
+    Output('stats-table', 'data'),
+    Input('precomp-store', 'data')
+)
+def update_stats_table(precomp):
+    stats = precomp.get('value_stats') if precomp else {}
+    if not stats:
+        return []
+    # convert to list of dicts for DataTable
+    rows = []
+    for k, v in stats.items():
+        rows.append({'stat': k, 'value': v})
+    return rows
+
+
+@app.callback(
+    Output('stats-table', 'style_cell'),
+    Output('stats-table', 'style_header'),
+    Output('stats-table', 'style_data'),
+    Input('switch', 'value')
+)
+def stats_table_styles(is_dark: bool):
+    if is_dark:
+        style_cell = {
+            'textAlign': 'left',
+            'padding': '8px',
+            'color': '#f8f9fa',
+            'backgroundColor': '#222',
+        }
+        style_header = {
+            'backgroundColor': '#2b2b2b',
+            'fontWeight': 'bold',
+            'color': '#f8f9fa',
+        }
+        style_data = {
+            'backgroundColor': '#222',
+            'color': '#f8f9fa',
+        }
+    else:
+        style_cell = {
+            'textAlign': 'left',
+            'padding': '8px',
+            'color': '#212529',
+            'backgroundColor': 'white',
+        }
+        style_header = {
+            'backgroundColor': '#f8f9fa',
+            'fontWeight': 'bold',
+            'color': '#212529',
+        }
+        style_data = {
+            'backgroundColor': 'white',
+            'color': '#212529',
+        }
+    return style_cell, style_header, style_data
 
 
 if __name__ == "__main__":
