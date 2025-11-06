@@ -14,9 +14,14 @@ df = pd.read_csv('data/Life Expectancy Data with IDH and Imputed Values.csv')
 df['Life expectancy '] = pd.to_numeric(df['Life expectancy '], errors='coerce')
 df['Year'] = pd.to_numeric(df['Year'], errors='coerce').astype(int)
 
-# compute year bounds for slider marks
-min_year = int(df['Year'].min())
-max_year = int(df['Year'].max())
+# Set base year for color scaling
+BASE_YEAR = 2000
+
+# Get sorted unique years including 1999 if not already present
+years = sorted(df['Year'].unique().tolist())
+if 1999 not in years:
+    years.append(1999)
+years.sort()
 
 # Create a Dash app
 app = dash.Dash(__name__)
@@ -32,17 +37,17 @@ app.layout = html.Div([
         id='indicator-dropdown',
         options=[
             {'label': 'Life Expectancy', 'value': 'Life expectancy '},
-            {'label': 'IDH', 'value': 'IDH'},  # Assuming IDH is computed
+            {'label': 'IDH', 'value': 'IDH'},
         ],
         value='Life expectancy '
     ),
-    dcc.Slider(
-        id='year-slider',
-        min=min_year,
-        max=max_year,
-        step=1,
-        value=max_year,
-        marks={y: str(y) for y in range(min_year, max_year + 1)}
+    # Replace slider with dropdown for years
+    dcc.Dropdown(
+        id='year-dropdown',
+        options=[{'label': str(year) + (' (Aggregate)' if year == 1999 else ''), 
+                 'value': year} for year in years],
+        value=max(years),
+        style={'margin': '10px 0'}
     ),
     dcc.Graph(id='global-graph'),
     
@@ -50,7 +55,8 @@ app.layout = html.Div([
     html.H2('Country Profile'),
     dcc.Dropdown(
         id='country-dropdown',
-        options=[{'label': i, 'value': i} for i in df['Country'].unique()],
+        options=[{'label': i + (' (Global Average)' if i == 'World' else ''), 
+                 'value': i} for i in sorted(df['Country'].unique())],
         value=df['Country'].unique()[0]
     ),
     html.Div(id='country-profile'),
@@ -71,15 +77,15 @@ app.layout = html.Div([
     )
 ])
 
-# Update global graph
+# Update global graph - modify the callback inputs
 @app.callback(
     Output('global-graph', 'figure'),
     [Input('indicator-dropdown', 'value'),
-     Input('year-slider', 'value')]
+     Input('year-dropdown', 'value')]
 )
 def update_global_graph(indicator, year):
-    # Always use the color range computed from the latest year so gradient is stable
-    latest_df = df[df['Year'] == max_year]
+    # Use BASE_YEAR for the color range so gradient is stable
+    latest_df = df[df['Year'] == BASE_YEAR]
     # try to coerce to numeric (handles columns that may be non-numeric)
     latest_vals = pd.to_numeric(latest_df.get(indicator, pd.Series()), errors='coerce')
     vmin = None
@@ -124,7 +130,7 @@ def update_global_graph(indicator, year):
 @app.callback(
     Output('country-profile', 'children'),
     [Input('country-dropdown', 'value'),
-     Input('year-slider', 'value')]
+     Input('year-dropdown', 'value')]  # Changed from year-slider
 )
 def update_country_profile(country, year):
     country_df = df[(df['Country'] == country) & (df['Year'] == year)]
@@ -152,19 +158,27 @@ def update_correlation_graph(indicator, hoverData):
     labels = corrs.index.tolist()
     values = corrs.values.tolist()
 
-    # Determine hovered factor label from hoverData (bar chart returns point 'y')
-    hovered_label = None
-    if hoverData and 'points' in hoverData and len(hoverData['points']) > 0:
-        p = hoverData['points'][0]
-        # For horizontal bar chart we use 'y' as label; fallback to 'label' for robustness
-        hovered_label = p.get('y') or p.get('label') or p.get('customdata')
+    # Build horizontal bar chart so all labels and values are visible
+    colors = ['#2ca02c' if v >= 0 else '#d62728' for v in values]  # green for positive, red for negative
+    fig = go.Figure(
+        go.Bar(
+            x=values,
+            y=labels,
+            orientation='h',
+            marker_color=colors,
+            text=[f"{v:.3f}" for v in values],
+            textposition='auto',
+            hovertemplate='%{y}: %{x:.3f}<extra></extra>'
+        )
+    )
 
-    # Create 'pull' to emphasize hovered slice
-    pull = [0.12 if (lbl == hovered_label) else 0 for lbl in labels]
-
-    fig = go.Figure(data=[go.Pie(labels=labels, values=values, pull=pull, sort=False)])
-    fig.update_traces(textinfo='percent+label', hoverinfo='label+value+percent')
-    fig.update_layout(margin=dict(l=10, r=10, t=30, b=10))
+    fig.update_layout(
+        title=f'Correlation with {indicator}',
+        xaxis_title='Correlation',
+        margin=dict(l=150, r=10, t=40, b=20),
+        yaxis={'autorange': 'reversed'},
+        height=600
+    )
 
     return fig
 
@@ -201,11 +215,11 @@ def update_factor_details(indicator):
     details.append(html.P(f'Factor Details: {indicator}'))
     return details
 
-# Update data table
+# Update data table - modify the callback inputs
 @app.callback(
     Output('data-table', 'data'),
     [Input('country-dropdown', 'value'),
-     Input('year-slider', 'value')]
+     Input('year-dropdown', 'value')]  # Changed from year-slider
 )
 def update_data_table(country, year):
     filtered_df = df[(df['Country'] == country) & (df['Year'] == year)]
