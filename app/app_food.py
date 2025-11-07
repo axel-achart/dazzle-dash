@@ -375,7 +375,7 @@ def update_top_items(validated_filters, df_json):
     fig = px.bar(x=agg.index, y=agg.values,
                  labels={"x": "Products", "y": "Total Quantity Produced"},
                  title="Top 10 Products by Quantity Produced")
-    fig.update_layout(xaxis={'tickangle': 45}, margin=dict(b=100))  # Rotation des étiquettes pour la lisibilité
+    fig.update_layout(xaxis={'tickangle': 45}, margin=dict(b=100))  # Rotate labels for readability
     return fig
 
 
