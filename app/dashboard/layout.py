@@ -5,7 +5,7 @@ from dash import html, dcc
 
 def build_layout(unique_airlines, min_date=None, max_date=None):
     return html.Div([
-        html.H2("Dashboard - Retards de vols (Data Junior, SOLID)"),
+        html.H2("Dashboard - Retards de vols sur 2015"),
         html.Div([
             html.Label("Compagnie (filtre)"),
             dcc.Dropdown(options=[{"label": a, "value": a} for a in unique_airlines],
