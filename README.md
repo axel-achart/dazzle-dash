@@ -1,50 +1,68 @@
-# Dazzle Dash Python 
-*Data Visualisation.*
+# 🚦 Dazzle Dash Python
+*Data Visualization.*
 
-## Data StoryTelling
-Le Data Storytelling est l'art de raconter une histoire à un auditoire à travers une collection de données. </br>
-L'objectif de cette pratique est de faciliter la compréhension des résultats d'analyses de données par un public précis. </br> 
-C'est le "carrefour" de : l'attirance de l'audience par un contexte, captation et conservation de la captivité de l'audience, l'utilisation de données pertinentes et adaptées. </br>
-</br>
-Notre exemple : ///
+---
 
-## Veille et description de l'outil Dash
-Dash (by Plotly) est un framework open-source pour créer des applications web interactives et des tableaux de bords interactifs qui permettent aux utilisateurs d’explorer des visualisations de données complexes. </br> </br> 
-Ce framework utilise la puissance de Python pour effectuer des calculs analytiques tout en offrant une interface utilisateur intuitive.
+## 📖 Data Storytelling
 
-## Contexte du projet
-Dans un monde où les données sont omniprésentes, savoir les analyser et les raconter est devenu essentiel.</br>
-Le Data Storytelling vise à transformer des chiffres en histoires compréhensibles et percutantes, pour aider à la prise de décision et toucher en précision l'audience voulue.</br>
-</br>
-Dans ce projet, vous incarnez un analyste data chargé de créer un outil de visualisation automatisé pour le directeur marketing de votre entreprise.</br>
-Celui-ci souhaite obtenir une vue claire et rapide des informations clés issues des données internes.</br>
-</br>
-Face aux contraintes d’accès aux données sensibles, vous utilisez des sources publiques pour développer une preuve de concept.</br>
-L’objectif : démontrer qu’une analyse claire et interactive peut rendre la donnée accessible à tous.</br>
-</br>
-Grâce au framework Dash (by Plotly), vous créez une application multi-pages intuitive et esthétique, alliant analyse, visualisation et narration.</br>
-Ce projet illustre l’importance de relier mathématiques, statistiques et communication visuelle pour donner du sens aux données.
+Data storytelling is the art of conveying a narrative to an audience using a collection of relevant data and compelling visualizations.  
+Its goal is to make data analysis insights accessible and actionable for a specific audience—bridging the gap between numbers and real-world impact.  
+Effective data storytelling attracts attention with context, engages the audience, and highlights meaningful data to support decision-making.
 
-## Nos données utilisées
-- Life Expectancy Data (WHO) :
+**In this project:**  
+/ (Example coming soon)
 
-</br>
-- Food We Eat : Fichier CSV regroupant l'historique des vols par année, par destination et par produit transporté </br>
-Area Abbreviation = Acronyme de la zone (var) </br>
-Area Code = Code de la zone (num) </br>
-Area = Libellé de la Zone (var) </br>
-Item Code = Code du produit transporté (num) </br>
-Item = Libellé du produit transporté (var) </br>
-Element Code = Code du type de produit (num) </br>
-Element = Libellé du type de produit (var) </br>
-Unit = Poids de la cargaison (var) </br>
-Latitude = Coordonnée Latitude (num) </br>
-Longitude =  Coordonnée Longitude (num) </br>
-Yxxx = Nombre de vol par année (var)
- </br>
-</br>
-- 2015 Flight Delays and Cancellations : 
+---
 
+## 🛠️ Dash: The Visualization Framework
 
-## Les résultats d'analyse
-/
+Dash (by Plotly) is an open-source Python framework for building interactive data apps and dashboards—empowering users to explore complex data with ease.  
+It leverages Python for analytics and offers intuitive, responsive web interfaces without the need for advanced web development skills.
+
+**Key benefits:**  
+- Rapid prototyping of interactive dashboards
+- Seamless integration with the Python ecosystem (pandas, NumPy, plotly, etc.)
+- Multi-page apps and advanced charting
+- Modern, business-ready data apps for exploration and presentation
+
+---
+
+## 🌍 Project Context
+
+With the world awash in data, the ability to analyze and narrate insights is vital for business, strategy, and public understanding.  
+Data storytelling transforms raw statistics into impactful stories for smarter decisions and measurable results.
+
+**Scenario:**  
+As a data analyst, you're tasked with delivering an automated data visualization tool for your company's marketing director.  
+While sensitive internal data remains inaccessible, public datasets are leveraged to create a compelling proof of concept.
+
+**Objective:**  
+Demonstrate that interactive analytics can make key information visible and actionable for stakeholders at every level.
+
+**Solution:**  
+Using Dash, you craft a visually appealing, multi-page app that unites analysis, storytelling, and visualization—merging statistical rigor with intuitive communication.
+
+---
+
+## 📦 Data Sources
+
+- **Life Expectancy Data (WHO):** Comprehensive data on global life expectancy
+
+- **Food We Eat:** CSV file analyzing food shipment history by year, destination, and product
+    - *Area Abbreviation / Area Code / Area*: Region identifiers
+    - *Item Code / Item*: Transported product codes and names
+    - *Element Code / Element*: Product type code and label
+    - *Unit*: Cargo weight
+    - *Latitude / Longitude*: Geo-coordinates
+    - *Yxxx*: Flights per year
+
+- **2015 Flight Delays and Cancellations:** (Details TBA)
+
+---
+
+## 📊 Analytical Results
+
+/ (Section to be completed as project evolves)
+
+---
+
