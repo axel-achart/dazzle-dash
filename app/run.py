@@ -1,79 +1,41 @@
+# run.py
 """
-run.py
-Lance l'application Dash.
-
-Usage:
-    python -m app.run [DATA_FOLDER]
-
-Priorité pour trouver le dossier data:
- 1) argument CLI
- 2) variable d'environnement DATA_FOLDER
- 3) prompt console (si interactif)
- 4) fallback to app/config.DEFAULT_DATA_FOLDER
+2015 Flight Delay Analytics — Real dataset dashboard entrypoint
+Loads data and launches the Dash application.
 """
-import os
-import sys
-import argparse
-from pathlib import Path
 
-from config import DEFAULT_DATA_FOLDER, FLIGHTS_FILE, AIRLINES_FILE, AIRPORTS_FILE
 from data.data_loader import DataLoader
 from dashboard.app import create_dash_app
+import os
+import sys
+import time
 
-def get_data_folder() -> str:
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("data_folder", nargs="?", default=None)
-    args, _ = parser.parse_known_args()
-    if args.data_folder:
-        if os.path.isdir(args.data_folder):
-            return os.path.abspath(args.data_folder)
-        else:
-            print(f"[Warning] Dossier fourni introuvable: {args.data_folder}")
-
-    env = os.environ.get("DATA_FOLDER")
-    if env:
-        if os.path.isdir(env):
-            return os.path.abspath(env)
-        else:
-            print(f"[Warning] DATA_FOLDER défini mais dossier introuvable: {env}")
-
-    # interactive prompt if possible
-    if sys.stdin.isatty():
-        try:
-            candidate = input(f"Chemin vers le dossier data (enter pour utiliser '{DEFAULT_DATA_FOLDER}'): ").strip()
-            if candidate:
-                if os.path.isdir(candidate):
-                    return os.path.abspath(candidate)
-                else:
-                    print(f"[Warning] Dossier introuvable: {candidate}")
-        except Exception:
-            pass
-
-    # fallback
-    fallback = os.path.abspath(DEFAULT_DATA_FOLDER)
-    print(f"[Info] Utilisation du dossier par défaut: {fallback}")
-    return fallback
+DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
 
 def main():
-    base = get_data_folder()
-    flights_path = os.path.join(base, FLIGHTS_FILE)
-    airlines_path = os.path.join(base, AIRLINES_FILE)
-    airports_path = os.path.join(base, AIRPORTS_FILE)
+    print("\nInitializing dashboard...\n")
 
-    loader = DataLoader(base, flights_fname=FLIGHTS_FILE, airlines_fname=AIRLINES_FILE, airports_fname=AIRPORTS_FILE)
+    t0 = time.time()
+    dl = DataLoader(DATA_FOLDER, normalize_columns=True)
+    df = dl.load_flights()
 
-    try:
-        flights_df = loader.load_flights()
-    except FileNotFoundError as e:
-        print("Erreur:", e)
-        sys.exit(1)
+    print(f"Dataset loaded in {time.time() - t0:.2f}s")
+    print(f"Total rows: {len(df):,}")
+    print(f"Columns  : {df.columns.tolist()}")
 
-    airlines_df = loader.load_airlines()
-    airports_df = loader.load_airports()
+    print("\nBuilding dashboard (first load may take a moment)...")
 
-    # create dash app and run
-    dash_app = create_dash_app(flights_df, airlines_df, airports_df)
-    dash_app.run(debug=True, port=8050)
+    t1 = time.time()
+    app = create_dash_app(df)
+
+    print(f"App ready in {time.time() - t1:.2f}s")
+    print("Dashboard live at -> http://127.0.0.1:8050/\n")
+
+    app.run(debug=True, port=8050, host="127.0.0.1")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nServer stopped.")
+        sys.exit(0)

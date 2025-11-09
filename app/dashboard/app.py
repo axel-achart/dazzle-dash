@@ -1,43 +1,33 @@
-"""
-Factory to create the Dash app given a prepared pandas DataFrame.
-"""
+# dashboard/app.py
 from dash import Dash
 import dash_bootstrap_components as dbc
-
 from .layout import build_layout
-from .callbacks import register_callbacks
+from .callbacks import register_callbacks, preprocess
 import pandas as pd
 
-def create_dash_app(flights_df: pd.DataFrame, airlines_df=None, airports_df=None):
-    # Defensive copy
-    df = flights_df.copy()
-    # Try to use bootstrap theme if available, otherwise fallback
-    external = []
-    try:
-        external = [dbc.themes.BOOTSTRAP]
-    except Exception:
-        external = []
-
+def create_dash_app(flights_df: pd.DataFrame, airlines_df: pd.DataFrame = None, airports_df: pd.DataFrame = None):
+    external = [dbc.themes.BOOTSTRAP] if hasattr(dbc, "themes") else []
     app = Dash(__name__, external_stylesheets=external)
+    app.title = "2015 Flight Delay Dashboard"
 
-    # prepare UI inputs
-    if "AIRLINE_NAME" in df.columns:
-        unique_airlines = sorted(pd.Series(df["AIRLINE_NAME"].dropna().unique()).astype(str).tolist())
-    elif "AIRLINE" in df.columns:
-        unique_airlines = sorted(pd.Series(df["AIRLINE"].dropna().unique()).astype(str).tolist())
+    # preprocess once
+    df_clean = preprocess(flights_df)
+
+    # prepare UI options
+    if "AIRLINE_NAME" in df_clean.columns:
+        unique_airlines = sorted(df_clean["AIRLINE_NAME"].dropna().astype(str).unique().tolist())
+    elif "AIRLINE" in df_clean.columns:
+        unique_airlines = sorted(df_clean["AIRLINE"].dropna().astype(str).unique().tolist())
     else:
         unique_airlines = []
 
-    if "DATE" in df.columns and not df["DATE"].isna().all():
-        min_date = str(df["DATE"].min().date())
-        max_date = str(df["DATE"].max().date())
+    if "DATE" in df_clean.columns and not df_clean["DATE"].isna().all():
+        min_date = str(df_clean["DATE"].min().date())
+        max_date = str(df_clean["DATE"].max().date())
     else:
         min_date = None
         max_date = None
 
     app.layout = build_layout(unique_airlines, min_date, max_date)
-
-    # register callbacks uses `df` in closure
-    register_callbacks(app, df)
-
+    register_callbacks(app, df_clean)
     return app
