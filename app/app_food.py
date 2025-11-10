@@ -16,9 +16,9 @@ CLEANDIR = DATADIR / "clean"
 CLEANDIR.mkdir(parents=True, exist_ok=True)
 CSVPATH = CLEANDIR / "fao_clean.csv"
 
-
 @lru_cache(maxsize=1)
 def load_prepare_data(csvpath: Path = CSVPATH, fallback_csv: Path = DATADIR / "FAO.csv"):
+    # Load from cleaned CSV as primary
     if csvpath.exists():
         try:
             df = pd.read_csv(csvpath, low_memory=False, encoding="utf-8")
@@ -31,8 +31,7 @@ def load_prepare_data(csvpath: Path = CSVPATH, fallback_csv: Path = DATADIR / "F
             df = pd.read_csv(fallback_csv, low_memory=False, encoding="latin-1")
     else:
         return pd.DataFrame(), pd.DataFrame(columns=["Year", "Value"])
-    
-    # Canonical column renaming for consistency
+    # Canonical renaming
     rename_map = {}
     if "Area" in df.columns and "Country" not in df.columns:
         rename_map["Area"] = "Country"
@@ -40,13 +39,11 @@ def load_prepare_data(csvpath: Path = CSVPATH, fallback_csv: Path = DATADIR / "F
         rename_map["Item"] = "Product"
     if rename_map:
         df = df.rename(columns=rename_map)
-    
     # Identify year columns
     year_cols = [c for c in df.columns if isinstance(c, str) and (c.startswith("Y") and c[1:].isdigit())]
     if year_cols:
         df = df.rename(columns={c: c[1:] for c in year_cols})
     year_cols = [c for c in df.columns if isinstance(c, str) and c.isdigit()]
-
     # Melt wide format to long format if years exist
     if year_cols:
         df[year_cols] = df[year_cols].apply(pd.to_numeric, errors='coerce')
@@ -112,7 +109,7 @@ app = Dash(
 app.server = app.server
 
 def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
-    # Build lists for dropdowns and sliders
+    # Build dropdowns/slider lists
     countries = sorted(long_df["Country"].dropna().unique()) if not long_df.empty and "Country" in long_df.columns else []
     products = sorted(long_df["Product"].dropna().unique()) if not long_df.empty and "Product" in long_df.columns else []
     if not long_df.empty and "Year" in long_df.columns:
@@ -127,13 +124,12 @@ def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
         "products": [],
         "yearrange": [minyear, maxyear]
     }
-    # Page layout: sidebar + main panel
+
     layout = html.Div([
         html.Div([
             html.H2("FAO FOOD DASHBOARD", style={"margin": 0, "textAlign": "center", "fontSize": "32px", "fontWeight": "700"}),
         ], style={"padding": "20px", "border-bottom": "1px solid #dee2e6", "display": "flex", "justifyContent": "center"}),
         html.Div([
-            # Sidebar filters
             html.Div([
                 html.Label("Countries", style={"font-weight": "bold", "margin-bottom": "8px"}),
                 dcc.Dropdown(
@@ -166,61 +162,63 @@ def build_layout(wide_df: pd.DataFrame, long_df: pd.DataFrame):
                     style={"margin-top": "20px"}
                 ),
             ], style={
-                "background-color": "white", "padding": "20px", "border-radius": "8px", "box-shadow": "0 2px 4px rgba(0,0,0,0.1)", "color": "#212529", "width": "25%", "margin-right": "2%"
+                "background-color": "white", "padding": "20px", "border-radius": "8px", "box-shadow": "0 2px 4px rgba(0,0,0,0.1)", "color": "#212529", "width": "24%", "minWidth": "220px", "margin-right": "1%"
             }),
-            # Main graph panel
             html.Div([
                 html.Div([
                     html.Div([
-                        dcc.Graph(id="bar-top-areas", config={"displayModeBar": False}, style={"height": "400px", "width": "100%"}),
+                        dcc.Graph(id="bar-top-areas", config={"displayModeBar": False}, style={"height": "380px", "width": "98%"}),
                         html.P(
-                            "This chart displays the 10 countries that produce the highest quantities of the selected food products during the chosen period. The aim is to identify the world's largest producers to facilitate comparison between countries.",
-                            style={"margin-bottom": "22px", "font-size": "1rem", "color": "#555"}
+                            "This chart displays the 10 countries that produce the highest quantities of the selected food products. The aim is to identify the world's largest producers to facilitate comparison between countries.",
+                            style={"margin-bottom": "16px", "font-size": "0.85rem", "color": "#666"}
                         ),
-                    ], style={"width": "50%", "padding": "10px"}),
+                    ], style={"width": "48%", "padding": "4px"}),
                     html.Div([
-                        dcc.Graph(id="bar-top-items", config={"displayModeBar": False}, style={"height": "400px", "width": "100%"}),
+                        dcc.Graph(id="bar-top-items", config={"displayModeBar": False}, style={"height": "380px", "width": "98%"}),
                         html.P(
                             "This graph shows the 10 most produced products according to the selected filters. It allows you to see which foods are the most numerous in the analyzed database.",
-                            style={"margin-bottom": "22px", "font-size": "1rem", "color": "#555"}
+                            style={"margin-bottom": "16px", "font-size": "0.85rem", "color": "#666"}
                         ),
-                    ], style={"width": "50%", "padding": "10px"}),
-                ], style={"display": "flex", "margin-bottom": "20px"}),
+                    ], style={"width": "48%", "padding": "4px"}),
+                ], style={"display": "flex", "margin-bottom": "12px", "width": "100%"}),
                 html.Div([
-                    dcc.Graph(id="ts-top-areas", config={"displayModeBar": False}, style={"height": "400px", "width": "100%"}),
+                    dcc.Graph(id="ts-top-areas", config={"displayModeBar": False}, style={"height": "350px", "width": "100%"}),
                     html.P(
                         "This curve shows the evolution over time of production in the selected countries. It highlights trends, progress, or stagnation over several years.",
-                        style={"margin-bottom": "22px", "font-size": "1rem", "color": "#555"}
+                        style={"margin-bottom": "16px", "font-size": "0.85rem", "color": "#666"}
                     )
-                ], style={"padding": "10px", "margin-bottom": "20px"}),
+                ], style={"margin-bottom": "14px", "padding": "2px"}),
                 html.Div([
-                    dcc.Graph(id="pie-area", config={"displayModeBar": False}, style={"height": "800px", "width": "100%"}),
+                    dcc.Graph(id="pie-area", config={"displayModeBar": False}, style={"height": "450px", "width": "100%"}),
                     html.P(
                         "This pie chart illustrates the distribution of production by product within each selected country. It is useful for visualizing the diversity or specialization of each country.",
-                        style={"margin-bottom": "12px", "font-size": "1rem", "color": "#555"}
+                        style={"margin-bottom": "8px", "font-size": "0.85rem", "color": "#666"}
                     )
-                ], style={"padding": "10px"}),
+                ], style={"margin-bottom": "14px", "padding": "2px"}),
                 html.Div([
-                    dcc.Graph(id="corr-heatmap", config={"displayModeBar": False}, style={"height": "400px", "width": "75%"}),
+                    dcc.Graph(id="corr-heatmap", config={"displayModeBar": False}, style={"height": "350px", "width": "45%"}),
                     html.P(
                         "The correlation matrix indicates the extent to which annual production varies between different products or countries. The closer the color is to dark blue, the stronger the correlation (positive or negative); white indicates no correlation.",
-                        style={"margin-bottom": "12px", "font-size": "1rem", "color": "#555"}
+                        style={"margin-bottom": "8px", "font-size": "0.85rem", "color": "#666"}
                     )
-                ], style={"width": "73%", "background-color": "white", "border-radius": "8px",
-                          "box-shadow": "0 2px 4px rgba(0,0,0,0.1)", "padding": "20px"}),
+                ], style={"margin-bottom": "8px", "padding": "2px"}),
                 html.Div([
-            dash_table.DataTable(id='stats-table',
-                                 columns=[{"name": k, "id": k} for k in ['stat', 'value']],
-                                 data=[],
-                                 style_table={"overflowX": "auto"},
-                                 style_cell={"textAlign": "left", "color": "#212529", "backgroundColor": "white"},
-                                 style_header={"backgroundColor": "#f8f9fa", "fontWeight": "bold", "color": "#212529"},
-                                 style_data={"backgroundColor": "white", "color": "#212529"}
-                                 )
-        ], style={"padding": "12px", "width": "100%"})
-            ], style={"width": "73%", "background-color": "white", "border-radius": "8px",
-                      "box-shadow": "0 2px 4px rgba(0,0,0,0.1)", "padding": "20px"})
-        ], style={"display": "flex", "padding": "20px", "backgroundColor": "#f8f9fa"}),
+                    dash_table.DataTable(
+                        id='stats-table',
+                        columns=[{"name": "stat", "id": "stat"}, {"name": "value", "id": "value"}],
+                        data=[],
+                        style_table={"overflowX": "auto"},
+                        style_cell={"textAlign": "left", "color": "#212529", "backgroundColor": "white", "fontSize": "0.93rem"},
+                        style_header={"backgroundColor": "#f8f9fa", "fontWeight": "bold", "color": "#212529"},
+                        style_data={"backgroundColor": "white", "color": "#212529"}
+                    ),
+                ], style={"padding": "10px", "width": "98%"}),
+                html.P(
+                    "This table displays descriptive statistics calculated on all quantities produced. It includes the mean, standard deviation, limits (min, max), and distribution of values ​​(quartiles). This allows for a better understanding of the variety, dispersion, and orders of magnitude observed in the current selection.",
+                    style={"font-size": "0.94rem", "color": "#444", "margin-bottom": "8px"}
+                ),
+            ], style={"width": "74%", "background-color": "white", "border-radius": "8px", "box-shadow": "0 2px 4px rgba(0,0,0,0.05)", "padding": "18px"})
+        ], style={"display": "flex", "padding": "18px", "backgroundColor": "#f8f9fa"}),
         dcc.Store(id="df-long-store", data=LONG_DF.to_json(date_format='iso', orient='split')),
         dcc.Store(id="precomp-store", data=PRECOMP),
         dcc.Store(id="validated-filters", data=initial_filters)
@@ -239,7 +237,6 @@ def df_from_store(df_json) -> pd.DataFrame:
         dfl["Year"] = pd.to_datetime(dfl["Year"], errors="coerce")
     return dfl
 
-# Callback: Update filters when button clicked
 @app.callback(
     Output("validated-filters", "data"),
     Input("apply-filters-btn", "n_clicks"),
@@ -248,7 +245,7 @@ def df_from_store(df_json) -> pd.DataFrame:
     State("year-range", "value"),
 )
 def update_validated_filters(n_clicks, countries, products, yearrange):
-    # Update the validated filters on filter button click
+    # Update filters when user clicks
     if n_clicks is None:
         raise dashexceptions.PreventUpdate
     return {
@@ -263,7 +260,6 @@ def update_validated_filters(n_clicks, countries, products, yearrange):
     Input("df-long-store", "data")
 )
 def update_top_areas(validated_filters, df_json):
-    # Generate bar chart for top 10 countries by total quantity produced
     dfl = df_from_store(df_json)
     if dfl.empty:
         fig = go.Figure()
@@ -291,7 +287,7 @@ def update_top_areas(validated_filters, df_json):
         labels={"x": "Total Quantity Produced", "y": "Countries"},
         title="Top 10 Countries by Quantity Produced"
     )
-    fig.update_layout(yaxis={"categoryorder": "total ascending"}, margin=dict(l=120))
+    fig.update_layout(yaxis={"categoryorder": "total ascending"}, margin=dict(l=110, r=24, t=36, b=40))
     return fig
 
 @app.callback(
@@ -300,7 +296,6 @@ def update_top_areas(validated_filters, df_json):
     Input("df-long-store", "data")
 )
 def update_top_items(validated_filters, df_json):
-    # Generate bar chart for top 10 products by total quantity produced
     dfl = df_from_store(df_json)
     if dfl.empty:
         fig = go.Figure()
@@ -327,7 +322,7 @@ def update_top_items(validated_filters, df_json):
         labels={"x": "Products", "y": "Total Quantity Produced"},
         title="Top 10 Products by Quantity Produced"
     )
-    fig.update_layout(xaxis_tickangle=45, margin=dict(b=100))
+    fig.update_layout(xaxis_tickangle=45, margin=dict(l=28, r=28, t=36, b=70))
     return fig
 
 @app.callback(
@@ -336,7 +331,6 @@ def update_top_items(validated_filters, df_json):
     Input("df-long-store", "data")
 )
 def update_time_series(validated_filters, df_json):
-    # Generate time series for selected countries/products
     dfl = df_from_store(df_json)
     if dfl.empty or "Year" not in dfl.columns:
         fig = go.Figure()
@@ -365,14 +359,14 @@ def update_time_series(validated_filters, df_json):
     ts["Year"] = pd.to_datetime(ts["Year"].astype(int), format="%Y")
 
     fig = px.line(
-        ts, x="Year", y="Value", color="Country", markers=True,
-        title="Time series of Value for selected Countries"
+        ts, x="Years", y="Quantity Produced", color="Countries", markers=True,
+        title="Time series of Quantity produced for selected Countries"
     )
     fig.update_layout(
         xaxis=dict(tickformat="%Y"),
         yaxis=dict(title_text="Value"),
         hovermode="x unified",
-        margin=dict(t=40, l=60, r=160, b=40),
+        margin=dict(t=36, l=40, r=90, b=34),
         legend=dict(title_text="Country", orientation="v", x=1.02, xanchor="left", y=0.5, yanchor="middle")
     )
     return fig
@@ -382,7 +376,6 @@ def update_time_series(validated_filters, df_json):
     Input("validated-filters", "data"),
     Input("df-long-store", "data")
 )
-
 def update_pie(validated_filters, df_json):
     dfl = df_from_store(df_json)
     if dfl.empty:
@@ -410,12 +403,18 @@ def update_pie(validated_filters, df_json):
     n_countries = len(selected_countries)
     cols = min(3, n_countries)
     rows = (n_countries + cols - 1) // cols
-
-    # Add spacing between graphs!
     fig = make_subplots(
-        rows=rows, cols=cols, specs=[[{"type": "pie"}]*cols for _ in range(rows)],
-        horizontal_spacing=0.10, vertical_spacing=0.18
+        rows=rows, cols=cols,
+        specs=[[{"type": "pie"}]*cols for _ in range(rows)],
+        horizontal_spacing=0.11, vertical_spacing=0.13
     )
+
+    fig = make_subplots(
+    rows=rows, cols=cols,
+    specs=[[{"type": "pie"}]*cols for _ in range(rows)],
+    subplot_titles=selected_countries, # <--- chaque pie aura son titre
+    horizontal_spacing=0.11, vertical_spacing=0.13
+)
 
     for i, country in enumerate(selected_countries):
         row = (i // cols) + 1
@@ -433,13 +432,35 @@ def update_pie(validated_filters, df_json):
             if small_sum > 0:
                 labels.append("Other")
                 values.append(small_sum)
-            fig.add_trace(go.Pie(labels=labels, values=values, name=country, textinfo="label+percent", hole=0.3), row=row, col=col)
+            fig.add_trace(
+                go.Pie(
+                    labels=labels,
+                    values=values,
+                    name=country,
+                    textinfo="none",   # no per-wedge label!
+                    showlegend=True,
+                    hole=0.3
+                ),
+                row=row, col=col
+            )
 
     fig.update_layout(
         title="Production distribution by Product for selected Countries",
-        showlegend=False,
-        height=350*rows,  # ou 400*rows si tu veux plus d'espace
-        margin=dict(t=40, b=40)
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            x=-0.25,              
+            y=1,
+            xanchor="left",
+            yanchor="top",
+            font=dict(size=12),
+            bgcolor="rgba(255,255,255,0.85)", 
+            bordercolor="gray",
+            borderwidth=1,
+            itemwidth=175
+        ),
+        height=600,
+        margin=dict(t=10, b=60, l=100)
     )
 
     return fig
@@ -450,7 +471,6 @@ def update_pie(validated_filters, df_json):
     Input("precomp-store", "data")
 )
 def update_corr(precomp):
-    # Display correlation matrix between years/products (if available)
     if not precomp or not precomp.get("corr"):
         fig = go.Figure()
         fig.update_layout(title="No correlation matrix available")
@@ -462,7 +482,7 @@ def update_corr(precomp):
             color_continuous_scale="RdBu", zmin=-1, zmax=1,
             title="Correlation between years"
         )
-        fig.update_layout(margin=dict(l=40, r=20, t=40, b=40))
+        fig.update_layout(margin=dict(l=36, r=30, t=36, b=30))
         return fig
     except Exception:
         fig = go.Figure()
@@ -477,11 +497,7 @@ def update_stats_table(precomp):
     stats = precomp.get('valuestats') if precomp else {}
     if not stats:
         return []
-    rows = []
-    for k, v in stats.items():
-        rows.append({'stat': k, 'value': v})
-    return rows
-
+    return [{'stat': k, 'value': v} for k, v in stats.items()]
 
 if __name__ == "__main__":
     app.run(debug=False, port=8050)
