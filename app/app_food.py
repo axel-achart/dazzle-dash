@@ -359,7 +359,7 @@ def update_time_series(validated_filters, df_json):
     ts["Year"] = pd.to_datetime(ts["Year"].astype(int), format="%Y")
 
     fig = px.line(
-        ts, x="Years", y="Quantity Produced", color="Countries", markers=True,
+        ts, x="Year", y="Value", color="Country", markers=True,
         title="Time series of Quantity produced for selected Countries"
     )
     fig.update_layout(
@@ -445,23 +445,20 @@ def update_pie(validated_filters, df_json):
             )
 
     fig.update_layout(
-        title="Production distribution by Product for selected Countries",
-        showlegend=True,
-        legend=dict(
-            orientation="v",
-            x=-0.25,              
-            y=1,
-            xanchor="left",
-            yanchor="top",
-            font=dict(size=12),
-            bgcolor="rgba(255,255,255,0.85)", 
-            bordercolor="gray",
-            borderwidth=1,
-            itemwidth=175
-        ),
-        height=600,
-        margin=dict(t=10, b=60, l=100)
-    )
+    legend=dict(
+        orientation="v",
+        x=1.05,  # position horizontale à droite du graphe
+        y=0.5,   # verticale au milieu
+        xanchor="left",
+        yanchor="middle",
+        font=dict(size=12),
+        bgcolor="rgba(255,255,255,0.85)",
+        bordercolor="gray",
+        borderwidth=1,
+        itemwidth=175
+    ),    margin=dict(t=10, b=60, l=100)
+)
+
 
     return fig
 
